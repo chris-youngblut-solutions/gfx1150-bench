@@ -53,7 +53,8 @@ higher ceiling.
 1. **Vulkan token generation sits at 82-91% of the wall in every cell.** There is
    no meaningful kernel/flag headroom left; further gains require breaking the
    wall (speculative decoding) or moving it (memory clock / TDP).
-2. **Vulkan wins tg (~30-40%), ROCm wins pp (~10-30%)** — consistently across the
+2. **Vulkan wins tg (+9% to +48%; quant cells +24-48%, the F16 cell +9%), ROCm
+   wins pp (+4% to +37%)** — consistently across the
    matrix (one outlier: 4B/Q6_K, where Vulkan also wins pp). Chat workloads favor
    Vulkan; long-context prefill favors ROCm.
 3. **Flash attention is a win in every configuration tested** on RDNA 3.5 /

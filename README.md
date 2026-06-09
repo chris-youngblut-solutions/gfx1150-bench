@@ -15,9 +15,13 @@ Two scripts and their raw results:
 - `results/` — the raw CSVs, logs, and summaries the tables below are derived from.
 - `docs/methodology.md` — pinned environment, roofline method, full findings.
 
-## Results (2026-05-22, pinned env — see methodology)
+## Results (2026-05-22 — best result per model across the env sweep)
 
 Token-generation ceiling = measured bandwidth (~96 GB/s) ÷ weights read per token.
+Each cell is the best value that model achieved across the swept env passes
+(baseline / `nogttspill` / `+bfloat16`); per-cell env and all raw numbers are in
+`results/matrix-20260522-205342.csv`. The *recommended* config is baseline-env
+(see methodology — `nogttspill` regresses large models).
 
 | Model | wt GB | tg ceiling | Vulkan tg | % roof | ROCm tg | Vulkan pp | ROCm pp |
 |---|---:|---:|---:|---:|---:|---:|---:|
@@ -30,8 +34,9 @@ Token-generation ceiling = measured bandwidth (~96 GB/s) ÷ weights read per tok
 | 14B/Q4_0 | 8.51 | 11.3 | **10.27** | 91% | 8.28 | 196 | **269** |
 | 14B/Q4_K_M | 8.98 | 10.7 | **9.30** | 87% | 7.42 | 178 | **212** |
 
-- Vulkan wins token generation in every cell (~30-40%); ROCm wins prompt
-  processing in every cell but one (~10-30%).
+- Vulkan wins token generation in every cell — +9% to +48% (the F16 outlier is
+  the +9%; the quant cells run +24% to +48%). ROCm wins prompt processing in
+  every cell but one — +4% to +37%.
 - Vulkan token generation sits at 82-91% of the memory-bandwidth wall across all
   quants — flag-level optimization is exhausted on this device.
 
@@ -49,12 +54,22 @@ result on upstream llama.cpp binaries**, not a daemon or patch):
 
 ```bash
 # prereqs: llama.cpp built with -DGGML_VULKAN (and optionally a build-rocm/),
-# the Qwen GGUFs named in the scripts, GPU clock locked:
+# the GGUFs below in $GGUF_DIR, GPU clock locked:
 echo high | sudo tee /sys/class/drm/card1/device/power_dpm_force_performance_level
 
 LLAMA_DIR=~/llama.cpp GGUF_DIR=~/models/gguf ./bench-matrix.sh full
 LLAMA_DIR=~/llama.cpp GGUF_DIR=~/models/gguf ./spec-bench.sh
 ```
+
+Models required (exact filenames the scripts expect):
+- `bench-matrix.sh` — `Qwen3-4B-Instruct-2507-{Q4_0,Q4_K_M}.gguf` (core mode);
+  `full` mode adds `{Q5_K_M,Q6_K,Q8_0,F16}` and
+  `Qwen2.5-Coder-14B-Instruct-{Q4_0,Q4_K_M}.gguf`.
+- `spec-bench.sh` — `Qwen2.5-Coder-14B-Instruct-Q4_0.gguf` (target) +
+  `Qwen2.5-Coder-1.5B-Instruct-Q4_0.gguf` (draft). Spec decoding needs a
+  draft from the same family/tokenizer as the target — the Coder family
+  ships a 1.5B sibling, which is why the spec probe uses Qwen2.5-Coder
+  while the matrix sweeps the newer Qwen3-4B.
 
 Output lands in `./results/` as timestamped CSV/log/summary files.
 

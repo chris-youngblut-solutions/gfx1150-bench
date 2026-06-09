@@ -56,12 +56,20 @@ for DMAX in 4 8 16; do
       -ngl 99 -ngld 99 -fa 1 -c "$CTX" \
       --spec-draft-n-max "$DMAX" --spec-draft-n-min 1 \
       -p "$PROMPT" -n "$N" </dev/null > "$L" 2>&1
-  # llama-speculative prints a final summary block — capture the key fields
-  TG=$(grep -E 'encoded|decoded|drafted|accept' "$L" | tail -8 | grep -oE '[0-9]+(\.[0-9]+)? tokens?/s' | head -1)
+  # llama-speculative prints a final summary block — capture the key fields.
+  # The decode line reads "decoded N tokens in S seconds, speed: X t/s".
+  TG=$(grep -E 'decoded' "$L" | tail -1 | grep -oE '[0-9]+(\.[0-9]+)? t(okens?)?/s' | head -1)
+  if [[ -z "$TG" ]]; then
+    TG=$(grep -E 'encoded|decoded|drafted|accept' "$L" | tail -8 | grep -oE '[0-9]+(\.[0-9]+)? t(okens?)?/s' | head -1)
+  fi
   if [[ -z "$TG" ]]; then
     TG=$(grep -E 'common_perf_print:\s+eval time' "$L" | tail -1 | grep -oE '[0-9.]+ tokens per second' | head -1)
   fi
-  ACC=$(grep -E 'accept' "$L" | tail -2 | tr '\n' ' ' | grep -oE 'n_accept = [0-9]+|accept_rate[^ ]*[ =:][^ ]*' | head -1)
+  # The accept line reads "accept    = NN.NNN%"
+  ACC=$(grep -E '^.*accept\s+=' "$L" | tail -1 | grep -oE '[0-9]+(\.[0-9]+)?%' | head -1)
+  if [[ -z "$ACC" ]]; then
+    ACC=$(grep -E 'accept' "$L" | tail -2 | tr '\n' ' ' | grep -oE 'n_accept = [0-9]+|accept_rate[^ ]*[ =:][^ ]*' | head -1)
+  fi
   echo "| $LBL | ${TG:-?} | ${ACC:-—} | dmax=$DMAX |" | tee -a "$SUM"
 done
 
