@@ -55,7 +55,13 @@ echo "backend,env,model,size,params,test,t/s" > "$CSV"
 sweep() {
   local backend="$1" bin="$2" env_tag="$3" env_kv="$4"; shift 4
   local margs=()
-  for m in "$@"; do [[ -f "$m" ]] && margs+=( -m "$m" ) || echo "SKIP missing $m" | tee -a "$LOG"; done
+  for m in "$@"; do
+    if [[ -f "$m" ]]; then
+      margs+=( -m "$m" )
+    else
+      echo "SKIP missing $m" | tee -a "$LOG"
+    fi
+  done
   [[ ${#margs[@]} -eq 0 ]] && { echo "no models for $backend/$env_tag" | tee -a "$LOG"; return 0; }
   echo "=== $backend / $env_tag ===" | tee -a "$LOG"
   ( # subshell so per-backend env doesn't leak
