@@ -1,0 +1,14 @@
+# Dependabot configuration.
+# - Daily for github-actions (the only dependency surface in this repo).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: daily
+    commit-message:
+      prefix: "ci(deps)"
+    groups:
+      actions:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
