@@ -1,9 +1,8 @@
 # gfx1150-bench
 
-> Reproducible llama.cpp benchmark harness + results for the AMD Radeon 890M iGPU
-> (gfx1150, RDNA 3.5 — Ryzen AI 9 HX 370 "Strix Point"). Apache-2.0 OR MIT. Status: results of 2026-05-22.
+A reproducible llama.cpp benchmark harness (two shell scripts) plus raw results for the AMD Radeon 890M iGPU (gfx1150, RDNA 3.5 — Ryzen AI 9 HX 370 "Strix Point").
 
-## What
+## What it does
 
 Two scripts and their raw results:
 
@@ -73,6 +72,21 @@ Models required (exact filenames the scripts expect):
 
 Output lands in `./results/` as timestamped CSV/log/summary files.
 
+## How it works
+
+- `bench-matrix.sh` drives upstream `llama-bench`, iterating the backend × quant ×
+  flash-attention × RADV-env grid; each run is repeated 3 reps over `pp512` and
+  `tg128`, and labelled into a CSV + log.
+- `spec-bench.sh` runs the speculative-decoding probe: a 14B/Q4_0 target paired
+  with a same-family 1.5B/Q4_0 draft, sweeping `draft-max ∈ {4, 8, 16}` against
+  the no-draft baseline.
+- The roofline ceiling is computed as measured memory bandwidth (~96 GB/s) ÷
+  weights read per token; the `% roof` column reports how close each measured tg
+  sits to that wall.
+- All output is timestamped into `results/`; the published CSVs/logs/summaries are
+  the source the tables above are derived from. `docs/methodology.md` records the
+  pinned environment and full findings.
+
 ## Limits
 
 - Single device (OneXPlayer X1 Pro), single kernel/Mesa/llama.cpp pin
@@ -82,6 +96,16 @@ Output lands in `./results/` as timestamped CSV/log/summary files.
   raised power budget may move the bandwidth wall itself (untested here).
 - Spec-decode probe ran at `-c 1024` (GTT ceiling); longer contexts untested.
 - `results/` paths are scrubbed to relative form; re-runs will embed your paths.
+
+## Status
+
+- Shipped: `bench-matrix.sh`, `spec-bench.sh`, the published `results/` set, and
+  `docs/methodology.md`.
+- Results are dated 2026-05-22 against the pinned environment above (kernel
+  6.19.12 / Mesa 25.3.6 RADV / llama.cpp b9282), on a single OneXPlayer X1 Pro.
+- Versioning is SemVer; no tagged release yet (CHANGELOG `[Unreleased]`).
+- Not covered: multi-device portability, raised TDP / unlocked memory clock, and
+  contexts beyond the `-c 1024` spec-decode probe (see Limits).
 
 ## License
 
