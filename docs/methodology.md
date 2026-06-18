@@ -1,13 +1,13 @@
 # Methodology — gfx1150 llama.cpp baseline and optimization
 
-Token generation is memory-bandwidth-bound — it streams the whole model once per
-token — so the work here is measuring the distance to a fixed roofline and closing
-it, not collecting flags.
+Measures token generation on the Radeon 890M (gfx1150) iGPU against a fixed memory-bandwidth roofline, and records the configurations that close the gap to it.
 
-## Why a controlled re-baseline
+Token generation is memory-bandwidth-bound — it streams the whole model once per token — so the work is measuring the distance to the roofline and closing it.
+
+## Re-baseline
 
 An earlier Vulkan-vs-ROCm comparison on this device (4B: 23.6 vs 10.1 t/s
-generation) was not trustworthy:
+generation) was not controlled:
 
 1. **Uncontrolled GPU clock.** `pp_dpm_sclk` showed the iGPU parked at
    600-625 MHz against a 2900 MHz ceiling (`power_dpm = auto`). Runs may not have
@@ -16,7 +16,7 @@ generation) was not trustworthy:
    per-backend dequant variance. Scoreboards standardize on Q4_0 — the simplest
    quant, most uniformly optimized across backends — to isolate the backend.
 
-The controlled re-run changed the conclusions materially: Vulkan 4B tg went
+The controlled re-run changed the conclusions: Vulkan 4B tg went
 23.6 → 34.2 (+45%), 14B/Q4_K_M went 5.9 → 9.3 (+58%), and ROCm went
 10.1 → 24.7 (+144% — it was hurt more by the parked clock). The original
 "Vulkan wins decisively" overstated the gap roughly 3×.
@@ -50,9 +50,9 @@ higher ceiling.
 
 ## Matrix findings (full tables in the README and `results/`)
 
-1. **Vulkan token generation sits at 82-91% of the wall in every cell.** There is
-   no meaningful kernel/flag headroom left; further gains require breaking the
-   wall (speculative decoding) or moving it (memory clock / TDP).
+1. **Vulkan token generation sits at 82-91% of the wall in every cell.** Further
+   gains require breaking the wall (speculative decoding) or moving it (memory
+   clock / TDP).
 2. **Vulkan wins tg (+9% to +48%; quant cells +24-48%, the F16 cell +9%), ROCm
    wins pp (+4% to +37%)** — consistently across the
    matrix (one outlier: 4B/Q6_K, where Vulkan also wins pp). Chat workloads favor
