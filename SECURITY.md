@@ -11,7 +11,7 @@ Please **do not** open a public GitHub issue for security
 vulnerabilities.
 
 Use GitHub's private vulnerability reporting feature instead:
-**[Report a vulnerability](https://github.com/in-loop/gfx1150-bench/security/advisories/new)**.
+**[Report a vulnerability](https://github.com/chris-youngblut-solutions/gfx1150-bench/security/advisories/new)**.
 
 Alternatively, email the maintainer directly: christopheryoungblut@gmail.com. PGP
 key on request.
@@ -44,7 +44,7 @@ All releases are signed with **cosign keyless** via GitHub Actions OIDC
 
 ```bash
 cosign verify-blob \
-    --certificate-identity-regexp '^https://github.com/in-loop/gfx1150-bench/' \
+    --certificate-identity-regexp '^https://github.com/chris-youngblut-solutions/gfx1150-bench/' \
     --certificate-oidc-issuer https://token.actions.githubusercontent.com \
     --bundle <artifact>.bundle \
     <artifact>
